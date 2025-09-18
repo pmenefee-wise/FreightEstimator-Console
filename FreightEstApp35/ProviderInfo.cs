@@ -13,13 +13,13 @@ namespace FreightEstApp35
 
         static ProviderInfo()
         {
-            WiseTools.logToFile(Config.logFile, "Initializing ProviderInfo", true);
+            //WiseTools.logToFile(Config.logFile, "Initializing ProviderInfo", true);
             populateDictionaries();
         }
 
         private static void populateDictionaries()
         {
-            WiseTools.logToFile(Config.logFile, "Starting populateDictionaries", true);
+            //WiseTools.logToFile(Config.logFile, "Starting populateDictionaries", true);
 
             freightAbbreviations.Clear();
             freightDescriptions.Clear();
@@ -35,7 +35,7 @@ namespace FreightEstApp35
                 }
             }
 
-            WiseTools.logToFile(Config.logFile, "Finished populateDictionaries", true);
+            //WiseTools.logToFile(Config.logFile, "Finished populateDictionaries", true);
             
         }
     }

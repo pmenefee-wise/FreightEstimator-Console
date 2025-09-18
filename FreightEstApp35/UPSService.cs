@@ -13,8 +13,8 @@ namespace FreightEstApp35
         public string CWT { get; set; }
         public string Direct { get; set; }
         public string PlantCode { get; set; }
-        public string Rate { get; set; }
-        public string CWTRate { get; set; }
+        public string PublishedRate { get; set; }
+        public string NegotiatedRate { get; set; }
         public enum ServiceCode
         {
             UPSNextDayAir = 01,

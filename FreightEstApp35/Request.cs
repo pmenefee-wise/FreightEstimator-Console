@@ -220,7 +220,7 @@ namespace FreightEstApp35
             }
             catch (Exception e)
             {
-                Console.Write(e.ToString());
+                // Kill app so it can be restarted.
             }
 
             return (success);
@@ -271,20 +271,23 @@ namespace FreightEstApp35
 
         public void saveResults(List<RateDetail> upsRates, List<RateDetail> ltlRates)
         {
-            WiseTools.logToFile(Config.logFile, "Beginning saveResults", true);
-
+            //WiseTools.logToFile(Config.logFile, "Beginning saveResults", true);
+            string _plantCode = string.Empty;
             List<string[]> ratesToSave = new List<string[]>();
-            int maxResultsGUICanShow = 15;
+            int maxResultsGUICanShow = 20;
             //buildReplacementDictionary();
 
             //WiseTools.logToFile(Config.logFile, "Replacement Dictionary has been built", true);
 
             foreach (RateDetail rate in ltlRates)
             {
+                if (_plantCode == null) _plantCode = rate.plantCode;
+                if (_plantCode.Length < 3) _plantCode = rate.plantCode;
+
                 string[] rateInfo = new string[6];
                 rateInfo[0] = rate.basicProvider;
                 rateInfo[1] = rate.basicMethod;
-                rateInfo[2] = rate.basicRate.ToString();
+                rateInfo[2] = rate.totalCharges.ToString();
                 //rateInfo[3] = rate.serviceDesc.ToString();
                 rateInfo[4] = rate.addressClassification.ToString(); // If value is 2, Residential is TRUE
                 if (rate.note == null)
@@ -311,17 +314,12 @@ namespace FreightEstApp35
                 string[] rateInfo = new string[6];
                 rateInfo[0] = rate.basicProvider;
                 rateInfo[1] = rate.basicMethod;
-                rateInfo[2] = rate.basicRate.ToString();
+                rateInfo[2] = rate.totalCharges.ToString();
                 rateInfo[3] = rate.serviceDesc.ToString();
                 rateInfo[4] = rate.addressClassification.ToString(); // If value is 2, Residential is TRUE
                 rateInfo[5] = ""; // no note on UPS rates
                 ratesToSave.Add(rateInfo);
             }
-
-            
-
-
-            //WiseTools.logToFile(Config.logFile, "UPS rates added to ratesToSave", true);
 
             foreach (string[] rateInfo in ratesToSave)
             {
@@ -343,16 +341,95 @@ namespace FreightEstApp35
             }
 
             // Order and trim results
-            List<string[]> ratesToSaveAfterOrderAndTrim = ratesToSaveAfterExclusions.Take(maxResultsGUICanShow).ToList();
+            List<string[]> ratesToSaveAfterOrderAndTrim = ratesToSaveAfterExclusions.Take(maxResultsGUICanShow).ToList();            
 
-            WiseTools.logToFile(Config.logFile, "ratesToSave processed - about to initialize new DBUtil", true);
+            // Per Conversations April 2025 we will begin sorting and filtering the carriers uniquely for each plant.
+            // Yes, the above code sorts as well but I'm not sure if this change will stick so I'm leaving it for now.
+
+            List<string[]> newSortRates = new List<string[]>();
+            List<string[]> upsServices = new List<string[]>();
+
+            foreach (string[] rateDetail in ratesToSaveAfterOrderAndTrim)
+            {
+                switch(_plantCode)
+                {
+                    case "ALP":
+                        switch (rateDetail[1])
+                        {
+                            // UPS LTL RATE
+                            case "UPSGroundFreight":
+                                newSortRates.Add(rateDetail);
+                                break;
+
+                            // LTL RATES
+                            case "SOUTHEASTERN FREIGHT LINES, INC":
+                                newSortRates.Add(rateDetail);
+                                break;
+                            case "R & L CARRIERS INC.":
+                                newSortRates.Add(rateDetail);
+                                break;
+                            case "TFORCE FREIGHT":
+                                newSortRates.Add(rateDetail);
+                                break;
+                        }
+
+                        // ADD UPS SERVICES
+                        if(rateDetail[0].ToString() == "UPS" && rateDetail[1].ToString() != "UPSGroundFreight")
+                        {
+                            upsServices.Add(rateDetail);
+                        }
+                        break;
+                    case "FTW":
+                        switch (rateDetail[1])
+                        {
+                            // UPS LTL RATE
+                            case "UPSGroundFreight":
+                                newSortRates.Add(rateDetail);
+                                break;
+
+                            // LTL RATES
+                            case "DAYTON FREIGHT LINES, INC":
+                                newSortRates.Add(rateDetail);
+                                break;
+                            case "R & L CARRIERS INC.":
+                                newSortRates.Add(rateDetail);
+                                break;
+                            case "TFORCE FREIGHT":
+                                newSortRates.Add(rateDetail);
+                                break;
+                        }
+
+                        // ADD UPS SERVICES
+                        if (rateDetail[0].ToString() == "UPS" && rateDetail[1].ToString() != "UPSGroundFreight")
+                        {
+                            upsServices.Add(rateDetail);
+                        }
+                        break;
+                    default:
+                        newSortRates.Add(rateDetail);
+                        break;
+                }
+            }
+
+            // Sort the UPS Services
+            upsServices = upsServices.OrderBy(service =>
+            {
+                if (decimal.TryParse(service[2], out decimal price))
+                {
+                    return price;
+                }
+                return decimal.MaxValue;
+            }).ToList();
+
+            // Append the UPS Services to the main list.
+            newSortRates.AddRange(upsServices);
 
             DBUtil db = new DBUtil();
 
             //WiseTools.logToFile(Config.logFile, "DBUtil initialized - about to call saveResults", true);
-            db.saveResults(source, uniqueId, ratesToSaveAfterOrderAndTrim, toAddress);
+            db.saveResults(source, uniqueId, newSortRates, toAddress);
 
-            WiseTools.logToFile(Config.logFile, "Completed saveResults", true);
+            //WiseTools.logToFile(Config.logFile, "Completed saveResults", true);
 
             Console.WriteLine("Results saved to DB -- source: " + source + " id: " + uniqueId + " - " + DateTime.Now.ToShortTimeString());
 
@@ -448,7 +525,7 @@ namespace FreightEstApp35
                     break;
             }
 
-            WiseTools.logToFile(Config.logFile, "Provider abbreviation not found for " + fullMethod, true);
+            //WiseTools.logToFile(Config.logFile, "Provider abbreviation not found for " + fullMethod, true);
 
             return (shortMethod);
         }
@@ -465,7 +542,7 @@ namespace FreightEstApp35
 
             if (methodDesc == "")
             {
-                WiseTools.logToFile(Config.logFile, "Provider description not found for " + fullMethod, true);
+                //WiseTools.logToFile(Config.logFile, "Provider description not found for " + fullMethod, true);
             }
 
             //WiseTools.logToFile(Config.logFile, "Leaving getMethodDesc", true);
@@ -475,7 +552,7 @@ namespace FreightEstApp35
 
         private string abbreviateMethod_DBversion(string fullMethod)
         {
-            WiseTools.logToFile(Config.logFile, "Starting abbreviateMethod_DBversion", true);
+            //WiseTools.logToFile(Config.logFile, "Starting abbreviateMethod_DBversion", true);
             string shortMethod = "";
             /*
             foreach (string key in replacements.Keys)
@@ -488,17 +565,17 @@ namespace FreightEstApp35
 
             if (shortMethod == "")
             {
-                WiseTools.logToFile(Config.logFile, "Provider abbreviation not found for " + fullMethod, true);
+                //WiseTools.logToFile(Config.logFile, "Provider abbreviation not found for " + fullMethod, true);
             }
 
-            WiseTools.logToFile(Config.logFile, "Leaving abbreviateMethod_DBversion", true);
+            //WiseTools.logToFile(Config.logFile, "Leaving abbreviateMethod_DBversion", true);
 
             return (shortMethod);
         }
 
         private string getMethodDesc_DBversion(string fullMethod)
         {
-            WiseTools.logToFile(Config.logFile, "Starting getMethodDesc_DBversion", true);
+            //WiseTools.logToFile(Config.logFile, "Starting getMethodDesc_DBversion", true);
 
             string methodDesc = "";
 
@@ -507,10 +584,10 @@ namespace FreightEstApp35
 
             if (methodDesc == "")
             {
-                WiseTools.logToFile(Config.logFile, "Provider description not found for " + fullMethod, true);
+                //WiseTools.logToFile(Config.logFile, "Provider description not found for " + fullMethod, true);
             }
 
-            WiseTools.logToFile(Config.logFile, "Leaving getMethodDesc_DBversion", true);
+            //WiseTools.logToFile(Config.logFile, "Leaving getMethodDesc_DBversion", true);
 
             return (methodDesc);
         }

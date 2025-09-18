@@ -61,6 +61,12 @@ namespace FreightEstApp35
         static string _UPSShipFromState = "GA";
         static string _UPSShipFromZip = "30004";
 
+        static double _MinCWTWeightGround = 200;
+        static double _MinCWTPackagesGround = 2;
+
+        static double _MinCWTWeightAir = 100;
+        static double _MinCWTPackagesAir = 2;
+
         #region Plant shipping information
         static string _ShipFromShipperNumber = "391287";
 
@@ -68,12 +74,6 @@ namespace FreightEstApp35
 
         //static string[] _PlantCodes = { "ALP", "BUT", "FTW", "PDT", "POR" };
         static string[] _PlantCodes = { "ALP", "BUT", "FTW", "POR" };
-
-        static double _MinCWTWeightGround = 200;
-        static double _MinCWTPackagesGround = 2;
-
-        static double _MinCWTWeightAir = 100;
-        static double _MinCWTPackagesAir = 2;
 
         static Dictionary<string, string> _PlantNames = new Dictionary<string, string>();
         private static void populatePlantNames()

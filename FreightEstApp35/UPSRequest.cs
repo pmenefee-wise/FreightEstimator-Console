@@ -157,8 +157,8 @@ namespace FreightEstApp35
                 break;
         }
         uPSService.PlantCode = _shipment.PlantId;
-        uPSService.Rate = service.SelectToken("TotalCharges.MonetaryValue")?.ToString() ?? "-";
-        uPSService.CWTRate = service.SelectToken("NegotiatedRateCharges.TotalCharge.MonetaryValue")?.ToString() ?? "-";
+        uPSService.PublishedRate = service.SelectToken("TotalCharges.MonetaryValue")?.ToString() ?? "-";
+        uPSService.NegotiatedRate = service.SelectToken("NegotiatedRateCharges.TotalCharge.MonetaryValue")?.ToString() ?? "-";
         uPSService.CWT = "TBD";
 
         return uPSService;

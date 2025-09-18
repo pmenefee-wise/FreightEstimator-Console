@@ -7,6 +7,8 @@ namespace FreightEstApp35
 {
     class RateDetail
     {
+        public enum Carriers { UPS, UPSCWT, GF }
+
         public string basicProvider { get; set; }
         public string basicMethod { get; set; }
         public decimal basicRate { get; set; }
@@ -22,8 +24,9 @@ namespace FreightEstApp35
         public decimal serviceCharges { get; set; }
         public decimal transporationCharges { get; set; }
         
-        public RateDetail(string rateProvider, string methodDetail, decimal rateValue, string rateNote) 
+        public RateDetail(string rateProvider, string methodDetail, decimal rateValue, string rateNote, string plantId) 
         {
+            plantCode = plantId;
             basicProvider = rateProvider;
             basicMethod = methodDetail;
             basicRate = rateValue;
@@ -53,6 +56,7 @@ namespace FreightEstApp35
             basicMethod = serviceDesc;
             basicRate = totalCharges;
         }
+
         /*
         private string getAbbrev(string fullProvider)
         {

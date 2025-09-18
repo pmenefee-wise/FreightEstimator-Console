@@ -137,6 +137,8 @@ namespace FreightEstApp35
                     return HundredWeightEligable(serviceCode, numberOfPackages, packageWeight, lastPackageWeight);
                 case UPSService.ServiceCode.NextDayAirSaver:
                     return HundredWeightEligable(serviceCode, numberOfPackages, packageWeight, lastPackageWeight);
+                case UPSService.ServiceCode.UPS2ndDayAir:
+                    return HundredWeightEligable(serviceCode, numberOfPackages, packageWeight, lastPackageWeight);
                 case UPSService.ServiceCode.SecondDayAirAM:
                     return HundredWeightEligable(serviceCode, numberOfPackages, packageWeight, lastPackageWeight);
                 case UPSService.ServiceCode.UPSNextDayAir:
@@ -171,18 +173,28 @@ namespace FreightEstApp35
             }
         }
 
-        internal static string CalculateRate(string accountNumber, string plantId, string serviceName, string currentRate, string CWTRate, int numberOfPackages, string packageWeight, string lastPackage)
+        internal static string CalculateRate(string accountNumber, string plantId, string serviceName, string publishedRate, string negotiatedRate, int numberOfPackages, string packageWeight, string lastPackage)
         {
             int _accountNumber = 0;
-            double rate = Convert.ToDouble(currentRate);
-            double cwtRate = Convert.ToDouble(CWTRate);
+            double _publishedRate = Convert.ToDouble(publishedRate);
+            double _negotiatedRate = Convert.ToDouble(negotiatedRate);
             double noPackages = Convert.ToDouble(numberOfPackages);
             double total = 0.0;
             double markup = 0.0;
             double perPackageCharge = 0.0;
             double perShipmentCharge = 0.0;
-            double hundredWeightAdjustment = cwtRate / .7;
+            //double hundredWeightAdjustment = _negotiatedRate / .7;
             bool cwt = false;
+            double totalWeight = 0;
+
+            if (noPackages > 1)
+            {
+                totalWeight = (Convert.ToInt16(packageWeight) * (noPackages - 1)) + Convert.ToInt16(lastPackage);
+            }
+            else
+            {
+                totalWeight = Convert.ToInt16(packageWeight);
+            }
 
             RateCalculations rateCalculations = new RateCalculations();
 
@@ -330,41 +342,49 @@ namespace FreightEstApp35
                     break;
             }
 
-            if (cwt && serviceName == "UPSGround" || serviceName == "SecondDayAirAM")
-            {
-                total = hundredWeightAdjustment;
-                total += perShipmentCharge;
-                total += (perPackageCharge * noPackages);
-                total += (markup / 100) * hundredWeightAdjustment;
-            }
-            // Hundred weight adjustment
-            else if (cwt && serviceName != "UPSGroundFreight" && serviceName != "NextDayAirEarlyAM")
-            {
-                total = hundredWeightAdjustment;
-                total += perShipmentCharge;
-                total += (perPackageCharge * noPackages);
-            }
-            else if (serviceName == "UPSGroundFreight")
-            {
-                // Ground Freight should always use CWT Negotiated rates.
-                total = cwtRate;
-                total += ((markup / 100) * cwtRate);
-                total += perShipmentCharge;
-                total += (perPackageCharge * noPackages);
-            }
-            else if (serviceName == "NextDayAirEarlyAM")
-            {
-                total = cwtRate;
-                total += perShipmentCharge;
-                total += (perPackageCharge * noPackages);
-            }
-            else
-            {
-                total = rate;
-                total += ((markup / 100) * rate);
-                total += (perPackageCharge * noPackages);
-            }
+            bool isAirCWT = (noPackages >= Config.MinCWTPackagesAir) && (totalWeight >= Config.MinCWTWeightAir);
+            bool isGroundCWT = (noPackages >= Config.MinCWTPackagesGround) && (totalWeight >= Config.MinCWTWeightGround);
+            double markupPercentage = 0;
 
+            #region -- Define Service CWT Types dictionary (mapping codes to Ground, Air, or Neither) --
+            Dictionary<string, string> dServiceTypes = new Dictionary<string, string>();
+            dServiceTypes.Add("UPSGround", "GROUND");
+            dServiceTypes.Add("UPS3DaySelect", "GROUND");
+            dServiceTypes.Add("UPSSaver", "GROUND");
+            dServiceTypes.Add("UPSNextDayAir", "AIR");
+            dServiceTypes.Add("UPS2ndDayAir", "AIR");
+            dServiceTypes.Add("NextDayAirSaver", "AIR");
+            dServiceTypes.Add("SecondDayAirAM", "AIR");
+            dServiceTypes.Add("NextDayAirEarlyAM", "AIR-NN"); //means AIR - No Negotiated Rate - on this service, we ignore negotiated rate for CWT as it is not allowed
+            #endregion
+
+            if (serviceName == "UPSGroundFreight") 
+            {
+                double totalMU = ((markup / 100) * _negotiatedRate);
+                total = _negotiatedRate + totalMU;
+            }
+            // CWT is only applicable to the base UPS services.
+            else { 
+                if (cwt)
+                {
+                    // If CWT use negotiated rates for all UPS base services.
+                    total = _negotiatedRate;                                        
+                    total += perShipmentCharge;
+                    total += (perPackageCharge * noPackages);
+
+                    // If CWT use mark up calculations for all UPS base services.
+                    total += (markup / 100) * _negotiatedRate;
+                }
+                else
+                {
+                    // If NOT CWT use published rates for all services.
+                    total = _publishedRate;
+                    total += perShipmentCharge;
+                    total += (perPackageCharge * noPackages);
+
+                    // No markup is applied if NOT CWT for all UPS base services.
+                }
+            }
 
             return total.ToString("C");
         }
@@ -394,6 +414,9 @@ namespace FreightEstApp35
                     _eligable = (numberOfPackages >= Config.MinCWTPackagesAir) && (_totalWeight >= Config.MinCWTWeightAir);
                     break;
                 case UPSService.ServiceCode.NextDayAirSaver:
+                    _eligable = (numberOfPackages >= Config.MinCWTPackagesAir) && (_totalWeight >= Config.MinCWTWeightAir);
+                    break;
+                case UPSService.ServiceCode.UPS2ndDayAir:
                     _eligable = (numberOfPackages >= Config.MinCWTPackagesAir) && (_totalWeight >= Config.MinCWTWeightAir);
                     break;
                 case UPSService.ServiceCode.SecondDayAirAM:

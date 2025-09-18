@@ -189,7 +189,7 @@ namespace FreightEstApp35
             }
             catch (Exception err)
             {
-                WiseTools.logToFile(Config.logFile, "getProviderAbbrev - provider = " + fullProvider + " - Error encountered: " + err.ToString(), true);
+                //WiseTools.logToFile(Config.logFile, "getProviderAbbrev - provider = " + fullProvider + " - Error encountered: " + err.ToString(), true);
             }
 
             return (abbrev);
@@ -221,7 +221,7 @@ namespace FreightEstApp35
             }
             catch (Exception err)
             {
-                WiseTools.logToFile(Config.logFile, "verifyAndCorrectZipCode - Error encountered: " + err.ToString(), true);
+                //WiseTools.logToFile(Config.logFile, "verifyAndCorrectZipCode - Error encountered: " + err.ToString(), true);
             }
 
             if (correctZipCode.Trim() == originalZip.Trim())
@@ -255,7 +255,7 @@ namespace FreightEstApp35
             }
             catch (Exception err)
             {
-                WiseTools.logToFile(Config.logFile, "getProviderDesc - provider = " + fullProvider + " - Error encountered: " + err.ToString(), true);
+                //WiseTools.logToFile(Config.logFile, "getProviderDesc - provider = " + fullProvider + " - Error encountered: " + err.ToString(), true);
             }
 
             return (abbrev);
@@ -264,7 +264,7 @@ namespace FreightEstApp35
         internal DataSet getFreightProviderInfo()
         {
 
-            WiseTools.logToFile(Config.logFile, "Starting getFreightProviderInfo", true);
+            //WiseTools.logToFile(Config.logFile, "Starting getFreightProviderInfo", true);
 
             SqlConnection conn = new SqlConnection(connString);            
             SqlCommand cmdProviders = new SqlCommand(Config.SQLProviderAbbriviations, conn);
@@ -274,7 +274,7 @@ namespace FreightEstApp35
             SqlDataAdapter da = new SqlDataAdapter(cmdProviders);
             da.Fill(ds);
 
-            WiseTools.logToFile(Config.logFile, "Finished getFreightProviderInfo", true);
+            //WiseTools.logToFile(Config.logFile, "Finished getFreightProviderInfo", true);
 
             return (ds);
         }

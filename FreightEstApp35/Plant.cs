@@ -78,5 +78,41 @@ namespace FreightEstApp35
             conn.Close();
             return plants;
         }
+
+        public static List<PlantCharges> Charges(string plantID)
+        {
+            List<PlantCharges> charges = new List<PlantCharges>();
+            SqlConnection conn = new SqlConnection(Config.UPSShopRatesURL);
+            conn.Open();
+
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = conn;
+            cmd.CommandType = CommandType.Text;
+            cmd.CommandText = "SELECT * FROM PlantCarrierCharges2017 WHERE PlantCode = '" + plantID + "'";
+
+            SqlDataReader drResults = cmd.ExecuteReader();
+
+            while (drResults.Read())
+            {
+                PlantCharges plantCharges = new PlantCharges();
+                plantCharges.PlantId = drResults["PlantCode"].ToString();
+                plantCharges.CarrierId = drResults["CarrierId"].ToString();
+                plantCharges.PerPackageCharge = Convert.ToDouble(drResults["PerPackageCharge"].ToString());
+                plantCharges.PerShipmentCharge = Convert.ToDouble(drResults["PershipmentCharge"].ToString());
+                plantCharges.NextDayAir = Convert.ToDouble(drResults["NextDayAir"].ToString());
+                plantCharges.SecondDayAir = Convert.ToDouble(drResults["SecondDayAir"].ToString());
+                plantCharges.Ground = Convert.ToDouble(drResults["Ground"].ToString());
+                plantCharges.ThreeDaySelect = Convert.ToDouble(drResults["ThreeDaySelect"].ToString());
+                plantCharges.NextDayAirSaver = Convert.ToDouble(drResults["NextDayAirSaver"].ToString());
+                plantCharges.NextDayAirEarlyAM = Convert.ToDouble(drResults["NextDayAirEarlyAM"].ToString());
+                plantCharges.SecondDayAirAM = Convert.ToDouble(drResults["SecondDayairAM"].ToString());
+                plantCharges.Saver = Convert.ToDouble(drResults["Saver"].ToString());
+                charges.Add(plantCharges);
+            }
+
+            conn.Close();
+
+            return charges;
+        }
     }
 }

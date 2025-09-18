@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Data;
-using System.Net;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace FreightEstApp35
 {
@@ -11,13 +9,20 @@ namespace FreightEstApp35
     {
         static void Main(string[] args)
         {
-            WiseTools.logToFile(Config.logFile, "Launching application: " + Config.ENVIRONMENT, true);
+            //WiseTools.logToFile(Config.logFile, "Launching application: " + Config.ENVIRONMENT, true);
             Console.WriteLine("Launching application: " + Config.ENVIRONMENT);
+
+            string filePath = Assembly.GetExecutingAssembly().Location;
+            FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(filePath);
+            Console.WriteLine("Version: 4.25.2025");
             //System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             //Console.WriteLine("Security Protocol configured.");
             // Sets environment flag [PROD|DEBUG] based on host name.
             Console.WriteLine("Set Prod/Debug Flag.");
-            Config.SetProdDebug();            
+            Config.SetProdDebug();
+
+            Console.WriteLine("CUSTOM DEPLOYMENT COMMENT TO ENSURE UPDATE.");
+
 
             while (1 == 1)
             {
@@ -32,17 +37,16 @@ namespace FreightEstApp35
 
             if (myRequest.isLoaded)
             {
-                WiseTools.logToFile(Config.logFile, "Request found - processing....", true);
+                //WiseTools.logToFile(Config.logFile, "Request found - processing....", true);
 
                 if (((myRequest.numPackages - 1) * myRequest.pkgWeight) + myRequest.lastPkgWeight > 19999)
                 {
                     myRequest.writeError("WEIGHT", "Weight Exceeds Limit – Call");
 
-                    WiseTools.logToFile(Config.logFile, "Weight exceeds limit", true);
+                    //WiseTools.logToFile(Config.logFile, "Weight exceeds limit", true);
                 }
                 else
                 {
-
                     try
                     {
                         Console.WriteLine("Number of Packages: " + myRequest.numPackages);
@@ -50,7 +54,7 @@ namespace FreightEstApp35
                         Console.WriteLine("Last Package weight: " + myRequest.lastPkgWeight);
                         Console.WriteLine("Plant: " + myRequest.fromPlant);
 
-                        WiseTools.logToFile(Config.logFile, "Beginning UPS address validation", true);
+                        //WiseTools.logToFile(Config.logFile, "Beginning UPS address validation", true);
                         
                         UpsComm rates = new UpsComm();
 
@@ -91,14 +95,10 @@ namespace FreightEstApp35
                             if (candidates.Count == 1)
                             {
                                 rates.toRate = candidates[0];
-
-                                WiseTools.logToFile(Config.logFile, "Address corrected", true);
                             }
                             else
                             {
                                 rates.toRate = myRequest.toAddress;
-
-                                WiseTools.logToFile(Config.logFile, "Entered address being used", true);
                             }
 
                             List<RateDetail> upsRates = new List<RateDetail>();
@@ -107,61 +107,46 @@ namespace FreightEstApp35
 
                             if (myRequest.requestUPS)
                             {
-                                WiseTools.logToFile(Config.logFile, "Requesting UPS rates", true);
                                 upsRates = rates.getRates();
 
                                 foreach (RateDetail rate in upsRates)
                                 {
-                                    Console.WriteLine(rate.basicProvider + " " + rate.basicMethod + " " + rate.basicRate.ToString());
+                                    Console.WriteLine(rate.basicProvider + " " + rate.basicMethod + " " + rate.totalCharges);
                                 }
-
-                                WiseTools.logToFile(Config.logFile, "Done with UPS rates", true);
                             }
                             
                             if (myRequest.requestLTL)
                             {
-                                WiseTools.logToFile(Config.logFile, "Requesting UPS Ground Freight rates", true);
                                 groundFreightRates = rates.getGroundFreightRates();
 
                                 foreach (RateDetail rate in groundFreightRates)
                                 {
-                                    Console.WriteLine(rate.basicProvider + " " + rate.basicMethod + " " + rate.basicRate.ToString() + " " + rate.note);
+                                    Console.WriteLine(rate.basicProvider + " " + rate.basicMethod + " " + rate.totalCharges + " " + rate.note);
                                     ltlRates.Add(rate);
                                 }
-                                WiseTools.logToFile(Config.logFile, "Done with UPS Ground Freight rates", true);
-
-                                WiseTools.logToFile(Config.logFile, "Requesting LTL rates", true);                                                                
 
                                 foreach (RateDetail rate in rates.getLTLRates_TransportationInsight(rates))
                                 {
-                                    Console.WriteLine(rate.basicProvider + " " + rate.basicMethod + " " + rate.basicRate.ToString() + " " + rate.note);
+                                    Console.WriteLine(rate.basicProvider + " " + rate.basicMethod + " " + rate.basicRate + " " + rate.note);
+                                    rate.totalCharges = rate.basicRate;
                                     ltlRates.Add(rate);
                                 }
 
-                                WiseTools.logToFile(Config.logFile, "Done with LTL rates", true);
-                            }
+                            }                            
 
                             Console.WriteLine("Address: " + myRequest.toAddress.street);
-                            //WiseTools.logToFile(Config.logFile, "About to call routine to save results", true);
                             myRequest.saveResults(upsRates, ltlRates);
-
-                            //WiseTools.logToFile(Config.logFile, "Back from routine that saves results", true);
-
                         }
                         else
                         {
                             //WRITE ERROR TO REQUEST
-                            //Console.WriteLine("Invalid address -- unable to validate");
                             myRequest.writeError("ADDRESS", "Invalid address -- unable to validate");
-
-                            WiseTools.logToFile(Config.logFile, "ERROR - bad address", true);
                         }
                     }
                     catch (Exception err)
                     {
                         //WRITE ERROR TO REQUEST
                         myRequest.writeError("GENERAL", "Error processing request: processNextRequest() " + err.Message);
-                        WiseTools.logToFile(Config.logFile, "General error encountered: " + err.ToString(), true);
                     }
                 }
 
@@ -170,7 +155,6 @@ namespace FreightEstApp35
             {
                 System.Threading.Thread.Sleep(250);
             }
-            //LoginId, QtyNumber, ToAddress, ToCity, ToState, ToZip, ToCountry, NumPackages, PkgWeight, LastPkgWeight
         }
 
         static void testRoutine()
@@ -248,5 +232,6 @@ namespace FreightEstApp35
 
             Console.ReadKey();
         }
+
     }
 }

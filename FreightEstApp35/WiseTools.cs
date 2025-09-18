@@ -52,8 +52,10 @@ namespace FreightEstApp35
             return (converted);
         }
 
-        static public void logToFile(string fileName, string logData, bool prependTimestamp)
-        {
+        //static public void logToFile(string fileName, string logData, bool prependTimestamp)
+        //{
+            // This is causing showstopping errors to occur so removing for now.
+            /*  
             if (prependTimestamp)
             {
                 logData = DateTime.Now.ToString() + " - " + logData;
@@ -62,6 +64,7 @@ namespace FreightEstApp35
             {
                 file.WriteLine(logData);
             }
-        }
+            */
+        //}
     }
 }
